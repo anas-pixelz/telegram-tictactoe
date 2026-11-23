@@ -1,0 +1,14 @@
+{
+  "name": "telegram-tictactoe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A Telegram Tic-Tac-Toe bot powered by HTML Widgets",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "node src/bot.js",
+    "check": "node --check src/bot.js"
+  }
+}
