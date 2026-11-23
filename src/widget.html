@@ -1,0 +1,92 @@
+<style>
+:root{color-scheme:light dark}
+*{box-sizing:border-box}
+body{margin:0;padding:12px;background:var(--tg-theme-bg-color,#fff);color:var(--tg-theme-text-color,#222);font:14px system-ui,sans-serif}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+h2{font-size:17px;margin:0}
+.muted{color:var(--tg-theme-hint-color,#888);font-size:12px}
+#status{font-weight:600;margin:10px 0;min-height:20px}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.cell{height:clamp(72px,22vw,104px);border:0;border-radius:12px;background:var(--tg-theme-secondary-bg-color,#eee);color:var(--tg-theme-text-color,#222);font-size:36px;font-weight:750}
+.cell:disabled{opacity:.65}
+.cell.x{color:#3988ef}.cell.o{color:#21a879}
+.actions{display:flex;gap:8px;margin-top:12px}
+button.action{border:0;border-radius:9px;padding:10px 14px;background:var(--tg-theme-button-color,#2481cc);color:var(--tg-theme-button-text-color,#fff);font-weight:600}
+button:disabled{opacity:.5}
+.foot{margin-top:10px;text-align:center}
+</style>
+<div class="top"><h2>⭕ Tic-Tac-Toe</h2><span class="muted">YOU: X · BOT: O</span></div>
+<div id="status" role="status">Loading game…</div>
+<div class="board" id="board"></div>
+<div class="actions"><button class="action" id="new">New game</button></div>
+<div class="foot muted">The bot uses minimax. Good luck.</div>
+<script>
+(function(){
+  const tg=window.TelegramWidget;
+  const boardEl=document.getElementById('board');
+  const statusEl=document.getElementById('status');
+  const newBtn=document.getElementById('new');
+  let state={b:Array(9).fill(''),turn:'x',status:'playing',winner:null};
+  let busy=false;
+  function readState(raw){
+    if(!raw)return null;
+    try{
+      const s=JSON.parse(raw);
+      if(Array.isArray(s.b)&&s.b.length===9)return s;
+    }catch(_){}
+    return null;
+  }
+  function draw(){
+    boardEl.innerHTML='';
+    state.b.forEach((v,i)=>{
+      const b=document.createElement('button');
+      b.className='cell'+(v?' '+v:'');
+      b.textContent=v?v.toUpperCase():'';
+      b.disabled=busy||!!v||state.status!=='playing'||state.turn!=='x';
+      b.setAttribute('aria-label',v?'Cell '+(i+1)+' '+v:'Empty cell '+(i+1));
+      b.addEventListener('click',()=>move(i));
+      boardEl.appendChild(b);
+    });
+    if(state.status==='won')statusEl.textContent=state.winner==='x'?'You won! 🎉':'The bot won. Try again!';
+    else if(state.status==='draw')statusEl.textContent='It is a draw.';
+    else if(busy)statusEl.textContent='Thinking…';
+    else statusEl.textContent=state.turn==='x'?'Your turn — choose a square.':'Bot is thinking…';
+    newBtn.disabled=busy;
+  }
+  async function send(data){
+    if(!tg||typeof tg.request!=='function'){
+      statusEl.textContent='Open this game in Telegram to play.';
+      return null;
+    }
+    busy=true;draw();
+    try{
+      const answer=await tg.request(data);
+      const next=readState(answer&&answer.result);
+      if(next)state=next;
+      else state=readState(tg.chatData)||state;
+      return next;
+    }catch(e){
+      statusEl.textContent='Could not send move: '+(e&&e.code?e.code:'try again');
+      return null;
+    }finally{busy=false;draw();}
+  }
+  async function move(i){
+    if(busy||state.status!=='playing'||state.b[i])return;
+    await send('move:'+i);
+  }
+  newBtn.addEventListener('click',async()=>{
+    if(busy)return;
+    await send('reset');
+  });
+  if(tg&&typeof tg.onEvent==='function'){
+    tg.onEvent('chatDataChanged',()=>{
+      const next=readState(tg.chatData);
+      if(next){state=next;draw();}
+    });
+  }
+  const initial=readState(tg&&tg.chatData);
+  if(initial)state=initial;
+  draw();
+  if(tg&&typeof tg.ready==='function')tg.ready();
+})();
+</script>
