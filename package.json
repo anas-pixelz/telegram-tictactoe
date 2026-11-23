@@ -9,6 +9,6 @@
   },
   "scripts": {
     "start": "node src/bot.js",
-    "check": "node --check src/bot.js"
+    "check": "node --check src/bot.js && node scripts/check.js"
   }
 }
