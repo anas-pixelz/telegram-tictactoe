@@ -39,9 +39,11 @@ The widget has no network access. All game decisions and authoritative state cha
 For Railway:
 - Create a Node.js service from this repository.
 - Add the `BOT_TOKEN` environment variable.
+- Add a Railway Volume mounted at `/app/data`.
+- Set `DATA_DIR=/app/data` so game sessions survive restarts.
 - Use the start command `npm start`.
 
-Use one running replica because this prototype uses long polling. Do not run the same bot token in another polling process at the same time.
+Use one running replica because this prototype uses long polling. Do not run the same bot token in another polling process at the same time. Without a persistent volume, active game sessions are lost when the service restarts.
 
 ## Production availability
 
