@@ -153,13 +153,13 @@ async function handleWidgetQuery(query) {
       }
     }
 
-    games.set(key, state);
-    await saveGames();
     await api('editMessageWidgetData', {
       chat_id: query.chat.id,
       message_id: query.message_id,
       chat_data: JSON.stringify(state)
     });
+    games.set(key, state);
+    await saveGames();
   } catch (error) {
     console.error('Widget query failed:', error.message);
     const key = query.chat && query.message_id ? keyOf(query.chat.id, query.message_id) : null;
